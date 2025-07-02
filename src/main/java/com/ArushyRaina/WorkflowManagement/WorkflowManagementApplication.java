@@ -53,15 +53,19 @@ public class WorkflowManagementApplication {
 	        }
 
 	        // Create Employee user
-	        if (userRepository.findByUsername("employee").isEmpty()) {
+	     // Corrected version
+	        if (userRepository.findByUsername("aru").isEmpty()) {
 	            Users employee = new Users();
-	            employee.setUsername("employee");
-	            employee.setFullname("Employee User");
-	            employee.setPassword_hash(passwordEncoder.encode("emppass"));
-	            employee.setROLE_user("ROLE_EMPLOYEE");
+	            employee.setUsername("aru");
+
+	            // Use the corrected setter names that match your entity fields
+	            employee.setFullname("Aru Employee"); // Give a more specific name
+	            employee.setPassword_hash(passwordEncoder.encode("aruraina")); // Correct: setPasswordHash
+	            employee.setROLE_user("ROLE_EMPLOYEE"); // Correct: setRole
 	            employee.setIsActive(true);
+	            
 	            userRepository.save(employee);
-	            System.out.println(" Created EMPLOYEE user: employee");
+	            System.out.println(">>> Created EMPLOYEE user: aru");
 	        }
 	    };
 	}

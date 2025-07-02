@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Employee Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- CORRECTED NAVIGATION FOR EMPLOYEE -->
+        <nav class="main-nav">
+            <h2>WMS</h2>
+            <ul>
+                <li><a href="employee.html" class="nav-link active">My Dashboard</a></li>
+            </ul>
+            <div class="nav-footer">
+                <button id="logout-button" class="btn btn-secondary">Logout</button>
+            </div>
+        </nav>
+
+        <main class="content-area">
+            <header class="view-header">
+                <h1>Employee Dashboard</h1>
+                <div class="user-info">Welcome, <span id="user-fullname"></span></div>
+            </header>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <h3>My Tasks</h3>
+                </div>
+                <div id="tasks-list" class="item-list">
+                    <p>Loading tasks...</p>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <div class="panel-header">
+                    <h3>My Leave Requests</h3>
+                    <button id="add-leave-btn" class="btn btn-primary">Apply for Leave</button>
+                </div>
+                <div id="leave-list" class="item-list">
+                    <p>Loading leave requests...</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add Leave Request Modal -->
+    <div id="leave-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">×</span>
+            <h2>New Leave Request</h2>
+            <form id="leave-request-form">
+                <div class="form-group">
+                    <label for="leave-type">Leave Type</label>
+                    <select id="leave-type" required>
+                        <option value="">-- Select Type --</option>
+                        <option value="ANNUAL_LEAVE">Annual Leave</option>
+                        <option value="SICK_LEAVE">Sick Leave</option>
+                        <option value="PERSONAL">Personal</option>
+                    </select>
+                </div>
+                <div class="form-group-row">
+                    <div class="form-group">
+                        <label for="start-date">Start Date</label>
+                        <input type="date" id="start-date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="end-date">End Date</label>
+                        <input type="date" id="end-date" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="reason">Reason</label>
+                    <textarea id="reason" rows="3" placeholder="Provide a brief reason for your request..." required></textarea>
+                </div>
+                <div class="form-error" id="form-error-message"></div>
+                <div class="modal-actions">
+                    <button type="submit" class="btn btn-primary">Submit Request</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // --- DOM Elements ---
+        const userFullnameEl = document.getElementById('user-fullname');
+        const tasksListEl = document.getElementById('tasks-list');
+        const leaveListEl = document.getElementById('leave-list');
+        const logoutBtn = document.getElementById('logout-button');
+        const addLeaveBtn = document.getElementById('add-leave-btn');
+        const leaveModal = document.getElementById('leave-modal');
+        const closeModalBtn = leaveModal.querySelector('.close-button');
+        const leaveForm = document.getElementById('leave-request-form');
+        
+        const API_BASE_URL = 'http://localhost:8080';
+
+        // --- Functions ---
+        function renderTasks(tasks) {
+            tasksListEl.innerHTML = '';
+            if (!tasks || tasks.length === 0) {
+                tasksListEl.innerHTML = '<p>No open tasks. Great job!</p>';
+                return;
+            }
+            tasks.forEach(task => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'item';
+                itemDiv.innerHTML = `
+                    <div class="item-details">
+                        <strong>${task.title}</strong>
+                        <br>
+                        <small>Due: ${task.dueDate}</small>
+                    </div>
+                    <span class="status status-${task.status}">${task.status.replace('_', ' ')}</span>
+                `;
+                tasksListEl.appendChild(itemDiv);
+            });
+        }
+
+        function renderLeaveRequests(requests) {
+            leaveListEl.innerHTML = '';
+             if (!requests || requests.length === 0) {
+                leaveListEl.innerHTML = '<p>You have not submitted any leave requests.</p>';
+                return;
+            }
+            requests.forEach(req => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'item';
+                itemDiv.innerHTML = `
+                    <div class="item-details">
+                        <strong>${req.leaveType.replace('_', ' ')}</strong>
+                        <br>
+                        <small>${req.startDate} to ${req.endDate}</small>
+                    </div>
+                    <span class="status status-${req.status}">${req.status}</span>
+                `;
+                leaveListEl.appendChild(itemDiv);
+            });
+        }
+
+        async function loadDashboard() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/dashboard`);
+                if (response.status === 401 || response.status === 403) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+                if (!response.ok) throw new Error('Failed to load dashboard data.');
+                const data = await response.json();
+                
+                userFullnameEl.textContent = data.userInfo.fullname;
+                renderTasks(data.myOpenTasks);
+                renderLeaveRequests(data.myLeaveRequests);
+
+            } catch (error) {
+                console.error("Failed to load dashboard data:", error);
+                document.body.innerHTML = '<h1>Error loading data. Please try logging in again.</h1>';
+            }
+        }
+
+        // --- Event Listeners ---
+        logoutBtn.addEventListener('click', () => {
+            window.location.href = 'login.html';
+        });
+
+        addLeaveBtn.addEventListener('click', () => {
+            leaveModal.style.display = 'flex';
+        });
+
+        closeModalBtn.addEventListener('click', () => {
+            leaveModal.style.display = 'none';
+        });
+        
+        leaveForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const errorDiv = document.getElementById('form-error-message');
+            errorDiv.style.display = 'none';
+
+            const leaveData = {
+                leaveType: document.getElementById('leave-type').value,
+                startDate: document.getElementById('start-date').value,
+                endDate: document.getElementById('end-date').value,
+                reason: document.getElementById('reason').value,
+            };
+
+            if (!leaveData.leaveType || !leaveData.startDate || !leaveData.endDate || !leaveData.reason) {
+                errorDiv.textContent = 'Please fill out all fields.';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/leave/apply`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(leaveData),
+                });
+
+                if (!response.ok) {
+                    const errorResult = await response.json();
+                    throw new Error(errorResult.message || 'Failed to submit leave request.');
+                }
+                
+                leaveModal.style.display = 'none';
+                leaveForm.reset();
+                await loadDashboard(); // Refresh the list with the new request
+
+            } catch (error) {
+                errorDiv.textContent = error.message;
+                errorDiv.style.display = 'block';
+            }
+        });
+
+        // --- Initial Load ---
+        window.addEventListener('DOMContentLoaded', loadDashboard);
+    </script>
+</body>
+</html>

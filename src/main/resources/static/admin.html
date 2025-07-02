@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <header>
+            <h1>Admin Dashboard</h1>
+            <div class="user-info">Welcome, <span id="user-fullname"></span> <button class="btn btn-logout">Logout</button></div>
+        </header>
+        <main>
+            <div class="panel">
+                <div class="panel-header">
+                    <h3>User Management</h3>
+                    <button class="btn btn-primary btn-sm">Add New User</button>
+                </div>
+                <div id="user-list" class="item-list"></div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.querySelector('.btn-logout').addEventListener('click', () => window.location.href = 'login.html');
+
+        async function fetchUsers() {
+            try {
+                const response = await fetch('http://localhost:8080/api/users');
+                 if (response.status === 401 || response.status === 403) {
+                     window.location.href = 'login.html';
+                }
+                const users = await response.json();
+                const userListDiv = document.getElementById('user-list');
+                userListDiv.innerHTML = '';
+                users.forEach(user => {
+                    userListDiv.innerHTML += `
+                        <div class="item">
+                            <span>${user.fullname} (${user.username})</span>
+                            <div class="item-actions">
+                                <button class="btn btn-sm">Edit</button>
+                                <button class="btn btn-sm btn-logout">Delete</button>
+                            </div>
+                        </div>`;
+                });
+            } catch (error) {
+                console.error('Failed to fetch users:', error);
+            }
+        }
+        
+        window.onload = async () => {
+            try {
+                const response = await fetch('http://localhost:8080/api/dashboard');
+                const data = await response.json();
+                document.getElementById('user-fullname').textContent = data.userInfo.fullname;
+                fetchUsers();
+            } catch (error) {
+                 window.location.href = 'login.html';
+            }
+        }
+    </script>
+</body>
+</html>
