@@ -44,7 +44,6 @@ public class LeaveRequestService {
     public LeaveRequest approveLeaveRequest(Integer leaveRequestId) {
         LeaveRequest request = leaveRequestRepository.findById(leaveRequestId)
                 .orElseThrow(() -> new RuntimeException("Leave request not found"));
-        
         request.setStatus("APPROVED");
         return leaveRequestRepository.save(request);
     }
@@ -53,7 +52,6 @@ public class LeaveRequestService {
     public LeaveRequest rejectLeaveRequest(Integer leaveRequestId) {
         LeaveRequest request = leaveRequestRepository.findById(leaveRequestId)
                 .orElseThrow(() -> new RuntimeException("Leave request not found"));
-
         request.setStatus("REJECTED");
         return leaveRequestRepository.save(request);
     }
@@ -64,7 +62,22 @@ public class LeaveRequestService {
         return leaveRequestRepository.findByEmployee(employee);
     }
 
-    public List<LeaveRequest> getPendingLeaveRequests() {
-        return leaveRequestRepository.findByStatus("PENDING");
+    // --- vvv MODIFIED METHOD vvv ---
+    public List<LeaveRequest> getPendingLeaveRequestsForUser(Users currentUser) {
+        // If the user is an ADMIN, they should see all pending requests.
+        if ("ROLE_ADMIN".equals(currentUser.getROLE_user())) {
+            return leaveRequestRepository.findByStatus("PENDING");
+        }
+        
+        // If the user is a MANAGER, they see requests from their direct reports.
+        if ("ROLE_MANAGER".equals(currentUser.getROLE_user())) {
+            if (currentUser.getDirectReports() == null || currentUser.getDirectReports().isEmpty()) {
+                return List.of(); // Return empty list if manager has no reports
+            }
+            return leaveRequestRepository.findPendingRequestsForManager(currentUser.getDirectReports());
+        }
+        
+        // Employees see no pending approvals.
+        return List.of();
     }
 }

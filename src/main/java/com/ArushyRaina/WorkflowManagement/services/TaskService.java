@@ -91,4 +91,13 @@ public class TaskService {
         return taskRepository.findById(taskId)
                 .orElseThrow(() -> new RuntimeException("Task not found with ID: " + taskId));
     }
+    
+    public List<TaskEntity> getTasksAssignedByManager(Integer managerId) {
+        // 1. Find the manager user object from the database.
+        Users manager = userRepository.findById(managerId)
+                .orElseThrow(() -> new RuntimeException("Manager not found with ID: " + managerId));
+        
+        // 2. Use the custom repository method to find all tasks where the 'assignedBy' field matches this manager.
+        return taskRepository.findByAssignedBy(manager);
+    }
 }

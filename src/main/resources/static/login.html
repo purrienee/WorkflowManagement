@@ -3,176 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WMS Login</title>
-    <style>
-        /* --- Global Styles & Variables --- */
-        :root {
-            --primary-color: #007bff;
-            --primary-hover: #0056b3;
-            --danger-color: #dc3545;
-            --light-gray: #f0f2f5;
-            --dark-gray: #343a40;
-            --text-color: #212529;
-            --border-radius: 8px;
-            --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        }
-
-        body {
-            font-family: var(--font-family);
-            background-color: var(--light-gray);
-            color: var(--text-color);
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-        }
-
-        /* --- Login Page Styles --- */
-        .login-container {
-            width: 100%;
-            max-width: 400px;
-            padding: 2.5rem;
-            background: white;
-            border-radius: var(--border-radius);
-            box-shadow: var(--box-shadow);
-            text-align: center;
-        }
-
-        .login-container h2 {
-            margin-top: 0;
-            margin-bottom: 2rem;
-            color: var(--dark-gray);
-            font-size: 1.8rem;
-        }
-
-        .form-group {
-            margin-bottom: 1.5rem;
-            text-align: left;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ced4da;
-            border-radius: 6px;
-            box-sizing: border-box;
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
-
-        .form-group input:focus {
-            outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
-        }
-
-        .error-message {
-            color: var(--danger-color);
-            background-color: #f8d7da;
-            border: 1px solid #f5c6cb;
-            padding: 12px;
-            border-radius: 6px;
-            margin-bottom: 1rem;
-            text-align: center;
-            display: none; /* Hidden by default */
-        }
-
-        .btn {
-            width: 100%;
-            padding: 12px;
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 1rem;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background-color 0.2s, transform 0.1s;
-        }
-        
-        .btn:active {
-            transform: scale(0.98);
-        }
-
-        .btn:hover {
-            background-color: var(--primary-hover);
-        }
-    </style>
+    <title>Login - Workflow Management</title>
+    <link rel="stylesheet" href="/css/style.css">
 </head>
-<body>
+<body class="login-body">
     <div class="login-container">
-        <h2>Workflow Management System</h2>
-        <div id="login-error" class="error-message"></div>
-        <div class="form-group">
-            <label for="username">Username</label>
-            <input type="text" id="username" placeholder="e.g., manager" required>
-        </div>
-        <div class="form-group">
-            <label for="password">Password</label>
-            <input type="password" id="password" placeholder="e.g., managerpass" required>
-        </div>
-        <button id="login-button" class="btn">Sign In</button>
-    </div>
-
-    <script>
-        // Add event listener to the login button
-        document.getElementById('login-button').addEventListener('click', async () => {
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            const errorDiv = document.getElementById('login-error');
+        <div class="login-box">
+            <h1>Workflow Login</h1>
+            <p>Sign in to continue</p>
             
-            // Hide any previous error messages
-            errorDiv.style.display = 'none';
-
-            // Spring Security's form login expects data in this format
-            const loginData = new URLSearchParams();
-            loginData.append('username', username);
-            loginData.append('password', password);
-
-            try {
-                // 1. Attempt to log in by sending credentials to the /login endpoint
-                const loginResponse = await fetch('http://localhost:8080/login', {
-                    method: 'POST',
-                    body: loginData,
-                });
-
-                // 2. Check if the login was successful.
-                // A successful login will result in a redirect, so the final URL will not be the login URL.
-                if (loginResponse.ok && !loginResponse.url.includes('/login')) {
-                    
-                    // 3. If login is successful, fetch the dashboard data to find out the user's role
-                    const dashboardResponse = await fetch('http://localhost:8080/api/dashboard');
-                    if (!dashboardResponse.ok) throw new Error('Could not fetch user role.');
-                    
-                    const dashboardData = await dashboardResponse.json();
-                    const role = dashboardData.userInfo.role;
-
-                    // 4. Redirect to the correct dashboard based on the role
-                    if (role === 'ROLE_ADMIN') {
-                        window.location.href = 'admin.html';
-                    } else if (role === 'ROLE_MANAGER') {
-                        window.location.href = 'manager.html';
-                    } else {
-                        window.location.href = 'employee.html';
-                    }
-
-                } else {
-                    // If login fails, the server sends back the login page again.
-                    throw new Error('Invalid username or password.');
-                }
-            } catch (error) {
-                // Display any error messages to the user
-                errorDiv.textContent = error.message;
-                errorDiv.style.display = 'block';
-            }
-        });
-    </script>
+            <!-- Spring Security handles this form submission -->
+            <form action="/login" method="post">
+                <div class="input-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                <div class="input-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Login</button>
+            </form>
+        </div>
+    </div>
+    <script src="/js/login.js"></script>
 </body>
 </html>

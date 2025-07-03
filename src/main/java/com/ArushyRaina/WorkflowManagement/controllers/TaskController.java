@@ -92,19 +92,21 @@ public class TaskController {
      * @param newStatus The new status string, taken from the request body.
      * @return The updated task data as a safe DTO.
      */
+ // Inside TaskController.java
+
     @PutMapping("/{taskId}/status")
     public ResponseEntity<TaskResponse> updateTaskStatus(
             @PathVariable Integer taskId,
-            @RequestBody String newStatus,
-            @AuthenticationPrincipal Users currentUser) { // Spring Security provides the logged-in user
+            @RequestBody String newStatus, // Receives the raw request body, e.g., "\"COMPLETE\""
+            @AuthenticationPrincipal Users currentUser) {
 
-        // Call the service method, passing all required information,
-        // including the ID of the user making the request.
-        TaskEntity updatedTaskEntity = taskService.updateTaskStatus(taskId, newStatus, currentUser.getUserId());
+        // v-- ADD THIS LINE TO REMOVE THE QUOTES --v
+        String cleanStatus = newStatus.replaceAll("\"", "");
 
-        // Convert the result to a safe DTO before sending it back to the client.
+        // Call the service method with the cleaned status
+        TaskEntity updatedTaskEntity = taskService.updateTaskStatus(taskId, cleanStatus, currentUser.getUserId());
+
         TaskResponse responseDto = new TaskResponse(updatedTaskEntity);
-
         return ResponseEntity.ok(responseDto);
     }
     

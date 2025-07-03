@@ -90,8 +90,10 @@ public class UserController {
     }
     
     @GetMapping("/employees")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     public ResponseEntity<List<UserResponse>> getAllEmployees() {
-        List<UserResponse> employees = userService.findAllEmployees();
+        // We need a new service method to handle this logic
+        List<UserResponse> employees = userService.findAllByRole("ROLE_EMPLOYEE");
         return ResponseEntity.ok(employees);
     }
     

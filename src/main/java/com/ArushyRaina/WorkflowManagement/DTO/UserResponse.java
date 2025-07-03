@@ -1,31 +1,33 @@
 package com.ArushyRaina.WorkflowManagement.DTO;
 
-import com.ArushyRaina.WorkflowManagement.entities.Users; // Make sure to import your Users entity
+import com.ArushyRaina.WorkflowManagement.entities.Users;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@AllArgsConstructor // Good for testing
-@NoArgsConstructor  // Good for frameworks and flexibility
+@NoArgsConstructor
 public class UserResponse {
     private Integer userId;
     private String username;
     private String fullname;
     private String email;
-    private Integer managerId;
+    private String role;
+    private Boolean isActive;
+    private String managerName; // <-- NEW: To display the manager's name
 
-    /**
-     * This is a "mapping constructor".
-     * It knows how to build a safe UserResponse object from a full,
-     * sensitive Users entity by only copying the public fields.
-     */
+    // The mapping constructor
     public UserResponse(Users user) {
         this.userId = user.getUserId();
         this.username = user.getUsername();
         this.fullname = user.getFullname();
         this.email = user.getEmail();
-        this.managerId = user.getManagerId();
-    } // <-- Make sure this constructor has its closing brace '}'
+        this.role = user.getROLE_user();
+        this.isActive = user.getIsActive();
+
+        // Check if the user has a manager and set the name
+        if (user.getManager() != null) {
+            this.managerName = user.getManager().getFullname();
+        }
+    }
 }

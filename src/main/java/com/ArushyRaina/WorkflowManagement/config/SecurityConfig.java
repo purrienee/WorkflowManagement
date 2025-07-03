@@ -34,36 +34,39 @@ public class SecurityConfig {
     }
 
     // This is the main security filter chain configuration
+ // Inside SecurityConfig.java
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
-                // v-- THIS IS THE FIRST IMPORTANT PART --v
-                // Enable CORS using the 'corsConfigurationSource' bean defined below
                 .cors(Customizer.withDefaults())
-                
-                // Disable CSRF protection, as it's not needed for this type of API
                 .csrf(csrf -> csrf.disable())
 
-                // Define which requests need to be authorized
-             // Inside your securityFilterChain method in SecurityConfig.java
-
+                // v-- THIS IS THE CRITICAL CHANGE --v
                 .authorizeHttpRequests(auth -> auth
-                        // This rule says the login page and your CSS file can be accessed by anyone.
-                        .requestMatchers("/login.html", "/style.css").permitAll()
-                        // This rule says all OTHER requests must be authenticated.
+                        // Allow access to the login page, all files in the css/ and js/ folders, and any third-party libraries you might add.
+                        .requestMatchers("/", "/login.html", "/css/**", "/js/**", "/webjars/**", "/favicon.ico").permitAll()
+                        // All other requests (including all /api/** endpoints) must be authenticated.
                         .anyRequest().authenticated()
                 )
-                // ...
-                
-                // Tell Spring Security to use our custom service for finding users
+                // ^-- THIS IS THE CRITICAL CHANGE --^
+
                 .userDetailsService(jpaUserDetailService)
 
-                // Enable the default form-based login
-             // New, corrected version
                 .formLogin(form -> form
-                    .loginPage("/login.html")
-                    .loginProcessingUrl("/login")
-                    .defaultSuccessUrl("/api/dashboard", true) // <-- ADD THIS LINE
+                    .loginPage("/login.html") // The custom login page
+                    .loginProcessingUrl("/login") // The URL the form should POST to
+                    .defaultSuccessUrl("/index.html", true) // On success, redirect to the main app page
+                    .failureUrl("/login.html?error=true") // On failure, redirect back with an error
+                    .permitAll()
+                )
+
+                // Add explicit logout configuration
+                .logout(logout -> logout
+                    .logoutUrl("/logout") // The URL to trigger logout
+                    .logoutSuccessUrl("/login.html?logout=true") // Where to go after logout
+                    .invalidateHttpSession(true)
+                    .deleteCookies("JSESSIONID")
                     .permitAll()
                 )
                 
