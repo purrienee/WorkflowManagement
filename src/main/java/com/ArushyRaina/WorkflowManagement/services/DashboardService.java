@@ -1,8 +1,7 @@
 package com.ArushyRaina.WorkflowManagement.services;
 
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -18,6 +17,7 @@ public class DashboardService {
 
     private final TaskService taskService;
     private final LeaveRequestService leaveRequestService;
+    // The dependency on UserService has been REMOVED to break the circular dependency.
 
     public DashboardService(TaskService taskService, LeaveRequestService leaveRequestService) {
         this.taskService = taskService;
@@ -26,8 +26,7 @@ public class DashboardService {
 
     public DashboardResponse getDashboardData(Users currentUser) {
         DashboardResponse dashboard = new DashboardResponse();
-        Map<String, String> actions = new HashMap<>();
-
+        
         dashboard.setUserInfo(new UserResponse(currentUser));
 
         List<TaskResponse> myTasks = taskService.getTasksForUser(currentUser.getUserId())
@@ -38,9 +37,12 @@ public class DashboardService {
                 .stream().map(LeaveRequestResponse::new).collect(Collectors.toList());
         dashboard.setMyLeaveRequests(myLeaveRequests);
         
-        actions.put("SUBMIT_LEAVE_REQUEST", "POST /api/leave/apply");
+        dashboard.setPendingLeaveApprovals(new ArrayList<>());
+        dashboard.setTasksAssignedByMe(new ArrayList<>());
 
-        if (currentUser.getROLE_user().equals("ROLE_MANAGER") || currentUser.getROLE_user().equals("ROLE_ADMIN")) {
+        String role = currentUser.getROLE_user();
+
+        if ("ROLE_MANAGER".equals(role)) {
             List<LeaveRequestResponse> pendingApprovals = leaveRequestService.getPendingLeaveRequestsForUser(currentUser)
                     .stream().map(LeaveRequestResponse::new).collect(Collectors.toList());
             dashboard.setPendingLeaveApprovals(pendingApprovals);
@@ -48,18 +50,14 @@ public class DashboardService {
             List<TaskResponse> assignedTasks = taskService.getTasksAssignedByManager(currentUser.getUserId())
                     .stream().map(TaskResponse::new).collect(Collectors.toList());
             dashboard.setTasksAssignedByMe(assignedTasks);
-
-            actions.put("ASSIGN_NEW_TASK", "POST /api/tasks");
-            actions.put("APPROVE_LEAVE_REQUEST", "POST /api/leave/{id}/approve");
-            actions.put("REJECT_LEAVE_REQUEST", "POST /api/leave/{id}/reject");
         }
 
-        if (currentUser.getROLE_user().equals("ROLE_ADMIN")) {
-            actions.put("VIEW_ALL_USERS", "GET /api/users");
-            actions.put("CREATE_NEW_USER", "POST /api/users");
+        if ("ROLE_ADMIN".equals(role)) {
+            List<LeaveRequestResponse> pendingApprovals = leaveRequestService.getPendingLeaveRequestsForUser(currentUser)
+                    .stream().map(LeaveRequestResponse::new).collect(Collectors.toList());
+            dashboard.setPendingLeaveApprovals(pendingApprovals);
         }
 
-        dashboard.setAvailableActions(actions);
         return dashboard;
     }
 }

@@ -1,11 +1,8 @@
 package com.ArushyRaina.WorkflowManagement.repository;
 
 import java.util.List;
-import java.util.Set;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.ArushyRaina.WorkflowManagement.entities.LeaveRequest;
@@ -16,8 +13,9 @@ public interface LeaveRequestRepository extends JpaRepository<LeaveRequest, Inte
 
     List<LeaveRequest> findByEmployee(Users employee);
     List<LeaveRequest> findByStatus(String status);
-
-    // Find pending requests where the employee is one of the manager's direct reports
-    @Query("SELECT lr FROM LeaveRequest lr WHERE lr.status = 'PENDING' AND lr.employee IN :directReports")
-    List<LeaveRequest> findPendingRequestsForManager(@Param("directReports") Set<Users> directReports);
+    
+    // --- vvv THE NEW METHOD IS HERE vvv ---
+    // Find all leave requests where the specified user is the manager and the status is pending.
+    List<LeaveRequest> findByManagerAndStatus(Users manager, String status);
+    // --- ^^^ END OF NEW METHOD ^^^ ---
 }

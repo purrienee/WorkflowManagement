@@ -13,6 +13,7 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -24,13 +25,15 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @SuppressWarnings("serial")
 @Entity
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@EqualsAndHashCode(exclude = {"manager", "directReports"}) // Prevent recursion issues in Lombok methods
+// CRITICAL FIX: Exclude relational fields from equals and hashCode to prevent loops
+@EqualsAndHashCode(exclude = {"manager", "directReports"})
 @Table(name = "Users")
 public class Users implements UserDetails {
      
@@ -52,18 +55,16 @@ public class Users implements UserDetails {
 	
 	private Boolean isActive = true;
 
-    // --- vvv NEW HIERARCHY RELATIONSHIPS vvv ---
-
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY) // Lazy fetching is often safer for this
     @JoinColumn(name = "manager_id")
-    @JsonBackReference // Prevents infinite recursion in JSON serialization
+    @JsonBackReference
+    @ToString.Exclude // CRITICAL FIX: Exclude from toString() to prevent StackOverflowError on logging
     private Users manager;
 
-    @OneToMany(mappedBy = "manager")
-    @JsonManagedReference // The "one" side of the relationship
+    @OneToMany(mappedBy = "manager", fetch = FetchType.EAGER) // Eager fetch can help in some service scenarios
+    @JsonManagedReference
+    @ToString.Exclude // CRITICAL FIX: Exclude from toString()
     private Set<Users> directReports;
-
-    // --- ^^^ NEW HIERARCHY RELATIONSHIPS ^^^ ---
 
 	@Override
 	public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -74,13 +75,4 @@ public class Users implements UserDetails {
 	public String getPassword() {
 		return this.password_hash;
 	}
-
-    @Override
-    public String toString() {
-        return "Users{" +
-                "userId=" + userId +
-                ", username='" + username + '\'' +
-                ", Fullname='" + Fullname + '\'' +
-                '}';
-    }
 }

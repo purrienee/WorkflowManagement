@@ -1,6 +1,5 @@
 package com.ArushyRaina.WorkflowManagement.services;
 
-import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -23,22 +22,22 @@ public class LeaveRequestService {
         this.userRepository = userRepository;
     }
 
-    @Transactional
+ // ...
     public LeaveRequest createLeaveRequest(LeaveRequestCreate request, Integer employeeId) {
         Users employee = userRepository.findById(employeeId)
                 .orElseThrow(() -> new RuntimeException("Employee not found"));
 
+        if (employee.getManager() == null) {
+            throw new IllegalStateException("Cannot apply for leave. You have not been assigned a manager.");
+        }
+
         LeaveRequest leaveRequest = new LeaveRequest();
         leaveRequest.setEmployee(employee);
-        leaveRequest.setLeaveType(request.getLeaveType());
-        leaveRequest.setStartDate(request.getStartDate());
-        leaveRequest.setEndDate(request.getEndDate());
-        leaveRequest.setReason(request.getReason());
-        leaveRequest.setStatus("PENDING");
-        leaveRequest.setSubmissionDate(LocalDate.now());
-
+        leaveRequest.setManager(employee.getManager()); // This line is the key.
+        // ... set other fields and save
         return leaveRequestRepository.save(leaveRequest);
     }
+    // ...s
 
     @Transactional
     public LeaveRequest approveLeaveRequest(Integer leaveRequestId) {
@@ -62,22 +61,17 @@ public class LeaveRequestService {
         return leaveRequestRepository.findByEmployee(employee);
     }
 
-    // --- vvv MODIFIED METHOD vvv ---
     public List<LeaveRequest> getPendingLeaveRequestsForUser(Users currentUser) {
-        // If the user is an ADMIN, they should see all pending requests.
         if ("ROLE_ADMIN".equals(currentUser.getROLE_user())) {
+            // Admin sees all pending requests for oversight
             return leaveRequestRepository.findByStatus("PENDING");
         }
         
-        // If the user is a MANAGER, they see requests from their direct reports.
         if ("ROLE_MANAGER".equals(currentUser.getROLE_user())) {
-            if (currentUser.getDirectReports() == null || currentUser.getDirectReports().isEmpty()) {
-                return List.of(); // Return empty list if manager has no reports
-            }
-            return leaveRequestRepository.findPendingRequestsForManager(currentUser.getDirectReports());
+            // Manager sees requests assigned specifically to them
+            return leaveRequestRepository.findByManagerAndStatus(currentUser, "PENDING");
         }
         
-        // Employees see no pending approvals.
         return List.of();
     }
 }

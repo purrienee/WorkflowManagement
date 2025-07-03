@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.transaction.annotation.Transactional; // <-- IMPORT THIS
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -33,11 +34,18 @@ public class LeaveRequestController {
     }
 
     @PostMapping("/apply")
+    @Transactional // <-- THE DEFINITIVE FIX IS HERE
     public ResponseEntity<LeaveRequestResponse> applyForLeave(
             @Valid @RequestBody LeaveRequestCreate request,
             @AuthenticationPrincipal Users currentUser) {
+        
+        // This call will now happen inside an open database transaction
         LeaveRequest createdRequest = leaveRequestService.createLeaveRequest(request, currentUser.getUserId());
-        return new ResponseEntity<>(new LeaveRequestResponse(createdRequest), HttpStatus.CREATED);
+        
+        // The DTO can now safely access lazy-loaded fields because the transaction is still active
+        LeaveRequestResponse response = new LeaveRequestResponse(createdRequest);
+        
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
     @GetMapping("/my-requests")
@@ -47,16 +55,14 @@ public class LeaveRequestController {
         return ResponseEntity.ok(response);
     }
 
-    // Endpoint for a manager/admin to see PENDING leave requests
     @GetMapping("/pending")
-    @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')") // <-- ALLOW ADMIN
-    public ResponseEntity<List<LeaveRequestResponse>> getPendingRequests(@AuthenticationPrincipal Users currentUser) { // <-- GET CURRENT USER
-        List<LeaveRequest> requests = leaveRequestService.getPendingLeaveRequestsForUser(currentUser); // <-- USE NEW SERVICE METHOD
+    @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
+    public ResponseEntity<List<LeaveRequestResponse>> getPendingRequests(@AuthenticationPrincipal Users currentUser) {
+        List<LeaveRequest> requests = leaveRequestService.getPendingLeaveRequestsForUser(currentUser);
         List<LeaveRequestResponse> response = requests.stream().map(LeaveRequestResponse::new).collect(Collectors.toList());
         return ResponseEntity.ok(response);
     }
 
-    // A manager or admin can approve a leave request
     @PostMapping("/{id}/approve")
     @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
     public ResponseEntity<LeaveRequestResponse> approveRequest(@PathVariable Integer id) {
@@ -64,7 +70,6 @@ public class LeaveRequestController {
         return ResponseEntity.ok(new LeaveRequestResponse(approvedRequest));
     }
 
-    // A manager or admin can reject a leave request
     @PostMapping("/{id}/reject")
     @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
     public ResponseEntity<LeaveRequestResponse> rejectRequest(@PathVariable Integer id) {
