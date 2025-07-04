@@ -32,6 +32,7 @@ public class LeaveRequest {
     
     // --- vvv THE FIX IS HERE vvv ---
     @ManyToOne(fetch = FetchType.EAGER)
+    
     @JoinColumn(name = "manager_id") // This will hold the ID of the manager responsible for approval
     @ToString.Exclude
     private Users manager;

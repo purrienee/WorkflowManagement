@@ -35,7 +35,7 @@ public class TaskController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')") // <-- THE FIX IS HERE
+    @PreAuthorize("hasRole('MANAGER')") // <-- THE FIX IS HERE
     public ResponseEntity<TaskResponse> assignTask(
             @Valid @RequestBody TaskCreateRequest request,
             @AuthenticationPrincipal Users currentUser) {

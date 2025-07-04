@@ -1,10 +1,10 @@
 package com.ArushyRaina.WorkflowManagement.services;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional; // <-- IMPORT THIS
 
 import com.ArushyRaina.WorkflowManagement.DTO.DashboardResponse;
 import com.ArushyRaina.WorkflowManagement.DTO.LeaveRequestResponse;
@@ -17,18 +17,22 @@ public class DashboardService {
 
     private final TaskService taskService;
     private final LeaveRequestService leaveRequestService;
-    // The dependency on UserService has been REMOVED to break the circular dependency.
 
     public DashboardService(TaskService taskService, LeaveRequestService leaveRequestService) {
         this.taskService = taskService;
         this.leaveRequestService = leaveRequestService;
     }
 
+    // --- vvv THIS IS THE DEFINITIVE FIX vvv ---
+    @Transactional(readOnly = true)
+    // --- ^^^ THIS IS THE DEFINITIVE FIX ^^^ ---
     public DashboardResponse getDashboardData(Users currentUser) {
         DashboardResponse dashboard = new DashboardResponse();
         
+        // This mapping now happens INSIDE the transaction
         dashboard.setUserInfo(new UserResponse(currentUser));
 
+        // These service calls will join the existing transaction
         List<TaskResponse> myTasks = taskService.getTasksForUser(currentUser.getUserId())
                 .stream().map(TaskResponse::new).collect(Collectors.toList());
         dashboard.setMyOpenTasks(myTasks);
@@ -37,9 +41,6 @@ public class DashboardService {
                 .stream().map(LeaveRequestResponse::new).collect(Collectors.toList());
         dashboard.setMyLeaveRequests(myLeaveRequests);
         
-        dashboard.setPendingLeaveApprovals(new ArrayList<>());
-        dashboard.setTasksAssignedByMe(new ArrayList<>());
-
         String role = currentUser.getROLE_user();
 
         if ("ROLE_MANAGER".equals(role)) {

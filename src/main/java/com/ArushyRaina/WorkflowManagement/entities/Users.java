@@ -32,8 +32,7 @@ import lombok.ToString;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-// CRITICAL FIX: Exclude relational fields from equals and hashCode to prevent loops
-@EqualsAndHashCode(exclude = {"manager", "directReports"})
+@EqualsAndHashCode(exclude = {"manager", "directReports", "tasksAssignedTo", "tasksAssignedBy"})
 @Table(name = "Users")
 public class Users implements UserDetails {
      
@@ -44,7 +43,9 @@ public class Users implements UserDetails {
 	@Column(nullable = false, unique = true)
 	private String username;
 	
+	// vvv THIS FIELD WAS MISSING - IT IS NOW RESTORED vvv
 	private String password_hash;
+	// ^^^ THIS FIELD WAS MISSING - IT IS NOW RESTORED ^^^
 	
 	private String Fullname;
 	
@@ -55,16 +56,26 @@ public class Users implements UserDetails {
 	
 	private Boolean isActive = true;
 
-    @ManyToOne(fetch = FetchType.LAZY) // Lazy fetching is often safer for this
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "manager_id")
     @JsonBackReference
-    @ToString.Exclude // CRITICAL FIX: Exclude from toString() to prevent StackOverflowError on logging
+    @ToString.Exclude
     private Users manager;
 
-    @OneToMany(mappedBy = "manager", fetch = FetchType.EAGER) // Eager fetch can help in some service scenarios
+    @OneToMany(mappedBy = "manager", fetch = FetchType.EAGER)
     @JsonManagedReference
-    @ToString.Exclude // CRITICAL FIX: Exclude from toString()
+    @ToString.Exclude
     private Set<Users> directReports;
+
+    @OneToMany(mappedBy = "assignedTo")
+    @JsonManagedReference("user-tasks-assigned-to")
+    @ToString.Exclude
+    private Set<TaskEntity> tasksAssignedTo;
+
+    @OneToMany(mappedBy = "assignedBy")
+    @JsonManagedReference("user-tasks-assigned-by")
+    @ToString.Exclude
+    private Set<TaskEntity> tasksAssignedBy;
 
 	@Override
 	public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -73,6 +84,7 @@ public class Users implements UserDetails {
 
 	@Override
 	public String getPassword() {
+		// This method now correctly returns the restored field
 		return this.password_hash;
 	}
 }

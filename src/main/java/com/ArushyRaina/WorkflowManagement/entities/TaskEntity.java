@@ -2,8 +2,9 @@ package com.ArushyRaina.WorkflowManagement.entities;
 
 import java.time.LocalDate;
 
+import com.fasterxml.jackson.annotation.JsonBackReference; // <-- IMPORT THIS
+
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -12,15 +13,12 @@ import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
 
 @Entity
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@EqualsAndHashCode(exclude = {"assignedTo", "assignedBy"}) // Prevent loops
 public class TaskEntity {
 
 	@Id
@@ -38,13 +36,13 @@ public class TaskEntity {
 	
 	private LocalDate dueDate;
 	
-	@ManyToOne(fetch = FetchType.LAZY)
+	@ManyToOne
 	@JoinColumn(name= "assigned_to")
-    @ToString.Exclude // CRITICAL FIX: Exclude to prevent chain reaction
+    @JsonBackReference("user-tasks-assigned-to") // <-- ADD THIS ANNOTATION
 	private Users assignedTo;
 	
-	@ManyToOne(fetch = FetchType.LAZY)
+	@ManyToOne
 	@JoinColumn(name= "assigned_By")
-    @ToString.Exclude // CRITICAL FIX: Exclude to prevent chain reaction
+    @JsonBackReference("user-tasks-assigned-by") // <-- ADD THIS ANNOTATION
 	private Users assignedBy;
 }

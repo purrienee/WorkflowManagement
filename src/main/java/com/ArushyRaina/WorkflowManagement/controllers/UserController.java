@@ -23,12 +23,10 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/users")
-@PreAuthorize("hasRole('ADMIN')") // IMPORTANT: This secures the ENTIRE controller.
 public class UserController {
 
     private final UserService userService;
 
-    // Inject the UserService to handle all business logic
     public UserController(UserService userService) {
         this.userService = userService;
     }
@@ -36,9 +34,10 @@ public class UserController {
     /**
      * Retrieves a list of all users.
      * Only accessible by Admins.
-     * URL: GET http://localhost:8080/api/users
+     * URL: GET /api/users
      */
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<UserResponse>> getAllUsers() {
         List<UserResponse> users = userService.findAllUsers();
         return ResponseEntity.ok(users);
@@ -47,9 +46,10 @@ public class UserController {
     /**
      * Retrieves a single user by their ID.
      * Only accessible by Admins.
-     * URL: GET http://localhost:8080/api/users/{userId}
+     * URL: GET /api/users/{userId}
      */
     @GetMapping("/{userId}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserResponse> getUserById(@PathVariable Integer userId) {
         UserResponse user = userService.findUserById(userId);
         return ResponseEntity.ok(user);
@@ -58,9 +58,10 @@ public class UserController {
     /**
      * Creates a new user.
      * Only accessible by Admins.
-     * URL: POST http://localhost:8080/api/users
+     * URL: POST /api/users
      */
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserResponse> createUser(@Valid @RequestBody UserCreateRequest userCreateRequest) {
         UserResponse createdUser = userService.createNewUser(userCreateRequest);
         return new ResponseEntity<>(createdUser, HttpStatus.CREATED);
@@ -69,9 +70,10 @@ public class UserController {
     /**
      * Updates an existing user's details.
      * Only accessible by Admins.
-     * URL: PUT http://localhost:8080/api/users/{userId}
+     * URL: PUT /api/users/{userId}
      */
     @PutMapping("/{userId}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserResponse> updateUser(@PathVariable Integer userId, @Valid @RequestBody UserUpdateRequest userUpdateRequest) {
         UserResponse updatedUser = userService.updateUser(userId, userUpdateRequest);
         return ResponseEntity.ok(updatedUser);
@@ -80,27 +82,36 @@ public class UserController {
     /**
      * Deletes a user.
      * Only accessible by Admins.
-     * URL: DELETE http://localhost:8080/api/users/{userId}
+     * URL: DELETE /api/users/{userId}
      */
     @DeleteMapping("/{userId}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteUser(@PathVariable Integer userId) {
         userService.deleteUser(userId);
-        // A successful deletion returns a 204 No Content status with an empty body.
         return ResponseEntity.noContent().build();
     }
-    
+
+    /**
+     * Retrieves all employees.
+     * Accessible by Admins and Managers.
+     * URL: GET /api/users/employees
+     */
     @GetMapping("/employees")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     public ResponseEntity<List<UserResponse>> getAllEmployees() {
-        // We need a new service method to handle this logic
         List<UserResponse> employees = userService.findAllByRole("ROLE_EMPLOYEE");
         return ResponseEntity.ok(employees);
     }
-    
+
+    /**
+     * Retrieves all managers.
+     * Accessible by Admins and Managers.
+     * URL: GET /api/users/managers
+     */
     @GetMapping("/managers")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     public ResponseEntity<List<UserResponse>> getAllManagers() {
         List<UserResponse> managers = userService.findAllManagers();
         return ResponseEntity.ok(managers);
     }
-
 }
