@@ -44,6 +44,7 @@ public class TaskController {
                 request.getDescription(),
                 request.getDueDate(),
                 request.getAssignedToId(),
+                
                 currentUser.getUserId()
         );
         return new ResponseEntity<>(new TaskResponse(createdTaskEntity), HttpStatus.CREATED);
